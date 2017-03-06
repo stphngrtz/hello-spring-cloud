@@ -28,13 +28,6 @@ Dadurch, dass nur eine Git URI konfiguriert wird, weiß Spring, dass dies als Qu
 
 Wie lese ich vom Config-Server?
 
-```
-<dependency>
-    <groupId>org.springframework.cloud</groupId>
-    <artifactId>spring-cloud-starter-config</artifactId>
-</dependency>
-```
-
 Die `bootstrap.properties` Datei wird geladen, bevor alle anderen Konfigurationen geladen werden. Deshalb ist das der Ort, wo der Config-Server bekannt gemacht werden muss.
 
 ```
@@ -64,15 +57,52 @@ Ein Bereich der Anwendung wird mit `@RefreshScope` annotiert. Ein `curl http://l
 ## Routing and Filtering
 https://spring.io/guides/gs/routing-and-filtering/
 
-...
+Routing im Edge-Service mittels Netflix Zuul. Zuerst benötigen wir einen oder mehrere Services. Hier nutze ich einfach den im Centralized Configuration Guide erstellten Greetings-Service. Anschließend will der Edge-Service erstellt werden. Wie nicht anders zu erwarten war, ist das denkbar einfach. Eine Dependency auf `spring-cloud-starter-zuul` hinzufügen, eine Spring-Boot-Application aufsetzen, die zusätzlich mit `@EnableZuulProxy` annotiert ist und anschließend noch die Routen konfigurieren. Dies geschieht in der `application.properties`.
 
-Siehe auch...
-https://github.com/Netflix/zuul/wiki
-http://techblog.netflix.com/2013/06/announcing-zuul-edge-service-in-cloud.html
-https://tech.knewton.com/blog/2016/05/api-infrastructure-knewton-whats-edge-service/
+```
+server.port=8080
+zuul.routes.greetings.url=http://localhost:8090
+ribbon.eureka.enabled=false
+```
+
+Zuul arbeitet mit sog. Filtern. In die Details will ich im Rahmen dieses Guides nicht eingehen. Vielleicht erstelle ich hierzu demnächt man ein separates Repository - bis dahin muss die [offizielle Dokumentation](https://github.com/Netflix/zuul/wiki) herhalten. Ein solcher Filter sieht jedenfalls wie folgt aus:
+
+```
+public class SimpleFilter extends ZuulFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(SimpleFilter.class);
+
+    @Override
+    public String filterType() {
+        return "pre";
+    }
+
+    @Override
+    public int filterOrder() {
+        return 1;
+    }
+
+    @Override
+    public boolean shouldFilter() {
+        return true;
+    }
+
+    @Override
+    public Object run() {
+        HttpServletRequest request = RequestContext.getCurrentContext().getRequest();
+        log.info("{} request to {}", request.getMethod(), request.getRequestURL().toString());
+        return null;
+    }
+}
+```
+
+Startet man die Anwendung, findet man die Endpunkte des Greetings-Service über den Edge-Service hinter der Route `greetings`. So wird zum Beispiel aus http://localhost:8090/greeting ein http://localhost:8080/greetings/greeting.
+
+Siehe auch:
+- http://techblog.netflix.com/2013/06/announcing-zuul-edge-service-in-cloud.html
+- https://tech.knewton.com/blog/2016/05/api-infrastructure-knewton-whats-edge-service/
 
 ## TODO
-- https://spring.io/guides/gs/routing-and-filtering/
 - https://spring.io/guides/gs/client-side-load-balancing/
 - https://spring.io/guides/gs/service-registration-and-discovery/
 - https://spring.io/guides/gs/circuit-breaker/
