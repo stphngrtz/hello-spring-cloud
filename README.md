@@ -102,8 +102,84 @@ Siehe auch:
 - http://techblog.netflix.com/2013/06/announcing-zuul-edge-service-in-cloud.html
 - https://tech.knewton.com/blog/2016/05/api-infrastructure-knewton-whats-edge-service/
 
+## Client Side Load Balancing with Ribbon and Spring Cloud
+https://spring.io/guides/gs/client-side-load-balancing/
+
+Client Side Load Balancing stellt den klassischen Ansatz in Frage, bei dem eine dedizierte Instanz das Load Balancing übernimmt. Dadurch gibt es den Load Balancer als Bottleneck bzw. Single Point of Failure nicht mehr und grundsätzlich ist eine solche Lösung auch im Punkt Skalierbarkeit eine Naselänger weiter vorne.
+
+Siehe auch:
+- https://thenewstack.io/baker-street-avoiding-bottlenecks-with-a-client-side-load-balancer-for-microservices/
+
+Als Beispiel für den Guide ist der Compliments-Service entstanden, der via Ribbon Load-Balancing den Greetings-Service aufruft.
+
+### Konfiguration
+In der [application.yml](https://github.com/stphngrtz/hello-spring-cloud/blob/master/compliments-service/src/main/resources/application.yml) werden die Services definiert. In diesem Fall geht die Service Discovery nicht über Eureka sondern über eine fest definierte Liste inkl. Refresh-Intervall. Eureka zu verwenden ist definitiv zu empfehlen, aber dazu komme ich erst im nächsten Guide ;)
+
+```
+...
+greetings:
+  ribbon:
+    eureka:
+      enabled: false
+    listOfServers: localhost:8090,localhost:9092,localhost:9999
+    ServerListRefreshInterval: 15000
+```
+
+### Anbindung
+Angebunden wird Ribbon dort, wo die Webservice-Calls gemacht werden, in meinem Fall ist das [App.java](https://github.com/stphngrtz/hello-spring-cloud/blob/master/compliments-service/src/main/java/de/stphngrtz/spring/cloud/compliments/App.java).
+
+```
+@RestController
+@SpringBootApplication
+@RibbonClient(name = "greetings", configuration = GreetingsConfiguration.class)
+public class App {
+
+    public static void main(String[] args) {
+        SpringApplication.run(App.class, args);
+    }
+
+    @Autowired
+    RestTemplate restTemplate;
+
+    @LoadBalanced
+    @Bean
+    RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+
+    @RequestMapping(value = "/compliment")
+    public String compliment() {
+        String greeting = restTemplate.getForObject("http://greetings/greeting", String.class);
+        return String.format("%s. %s!", greeting, "You look amazing");
+    }
+}
+```
+
+Durch `@RibbonClient` wird dem Kontext ein Client bekannt gemacht. Der Name muss zu dem in der Konfiguration passen. Durch `@LoadBalanced` erfährt Spring, dass die Webservice-Calls dieser Schnittstelle durch einen Load Balancer laufen sollen. Schlussendlich muss die URL nur noch durch den Namen des Clients ersetzt werden und wir sind fertig... fast fertig. Dem aufmerksamen Leser wird die `GreetingsConfiguration` nicht entgangen sein. Ribbon ist mit gewissen Defaults vorbelegt. So werden zum Beispiel die URLs nicht geprüft. In Verbindung mit Eureka ist das auch nicht norwendig, aber da wir hier eine feste Liste von URLs angegeben haben wäre schon interessant, ob dahinter denn ein Service verfügbar ist.
+
+```
+public class GreetingsConfiguration {
+
+    @Bean
+    IPing ribbonPing() {
+        return new PingUrl();
+    }
+
+    @Bean
+    IRule ribbonRule() {
+        return new AvailabilityFilteringRule();
+    }
+}
+```
+
+Durch das Codebeispiel wird ein Ping zum Testen der Service URLs, sowie der in Ribbon integrierte Curcuit Breaker für die Verwaltung der Verfügbarkeit aktiviert.
+
+## Service Registration and Discovery
+https://spring.io/guides/gs/service-registration-and-discovery/
+
+...
+
 ## TODO
-- https://spring.io/guides/gs/client-side-load-balancing/
 - https://spring.io/guides/gs/service-registration-and-discovery/
 - https://spring.io/guides/gs/circuit-breaker/
 - https://spring.io/guides/tutorials/bookmarks/
