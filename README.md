@@ -244,6 +244,8 @@ Die unterschiedliche Art und Weise der Versionierung finde ich noch nicht ganz g
 ## TODO
 - https://spring.io/guides/gs/circuit-breaker/
 - https://spring.io/guides/tutorials/bookmarks/
+- https://spring.io/guides/gs/messaging-redis/
+- https://spring.io/guides/gs/messaging-rabbitmq/
 
 Siehe auch
 - https://blog.de-swaef.eu/the-netflix-stack-using-spring-boot/
