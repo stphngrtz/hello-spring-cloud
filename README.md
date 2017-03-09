@@ -177,9 +177,70 @@ Durch das Codebeispiel wird ein Ping zum Testen der Service URLs, sowie der in R
 ## Service Registration and Discovery
 https://spring.io/guides/gs/service-registration-and-discovery/
 
-...
+Bei diesem Guide wurde es doch tatsächlich etwas holprig. Warum? Zwei Gründe:
+- Lücken im Guide bei der Konfiguration. Wie erfärt denn der Client, unter welchem Port der Server läuft?
+- Verwirrung meinerseits bzgl. der Dependencies.
+
+Auf den zweiten Punkt will ich kurz eingehen. Bereits in den vorherigen Guides war ich mir nicht ganz sicher, wie das mit den Cloud-Dependencies läuft. Brauche ich diese *Dependencies-Dependency*? Zuvor habe ich die letzte Version per Hand eingetragen. Bei Eureka geht das theoretisch auch, aber dann startet der Server nicht. Fehlendes Web-Modul, oder so ähnlich. Ich hätte einfach der [Spring-Cloud Dokumentation](http://projects.spring.io/spring-cloud/) glauben sollen, die Dependencies werden wie folgt eingebunden:
+
+```
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-dependencies</artifactId>
+            <version>Camden.SR5</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-eureka-server</artifactId>
+    </dependency>
+</dependencies>
+```
+
+So, nachdem das geklärt ist, wie implementiert man einen Eureka-Server bzw. -Client? Die Anwendung bekommt eine `@EnableEurekaServer` Annotation und zusätzlich ein paar Informationen über die Konfigurationsdatei.
+
+```
+server:
+  port: 8761
+
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    registerWithEureka: false
+    fetchRegistry: false
+    serviceUrl:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+```
+
+Schon ist der Server fertig. Der Client ist genauso leicht aufzusetzen. `@EnableDiscoveryClient` an die Anwendung und ebenfalls ein paar Informationen via Konfigurationsdatei.
+
+```
+spring:
+  application:
+    name: eureka-client
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    preferIpAddress: true
+```
+
+Der Eureka-Server bringt von Haus aus eine Weboberfläche mit (http://localhost:8761/), auf der der Zustand der Service Registry zu sehen ist. In [ServiceInstanceController.java](https://github.com/stphngrtz/hello-spring-cloud/blob/master/eureka-client/src/main/java/de/stphngrtz/spring/cloud/eureka/ServiceInstanceController.java) sieht man beispielhaft, wie man auf die Service Discovery zugreift.
+
+### Fazit
+Die Vorteile davon, den Server in eine eigene Anwendung zu wrappen, erschließen sich mir noch nicht ganz. Intuitiv würde ich die Service Registry als dediziertes System laufen lassen. Da ich mich aber über diesen Guide hinaus noch nicht mit Eureka bzw. Spring Cloud Eureka beschäftigt habe, kommt die Erleuchtung vielleicht, wenn ich denn genau dies mache.
+
+Die unterschiedliche Art und Weise der Versionierung finde ich noch nicht ganz glücklich gewählt. Explizite Versionen mit Zahlen bei Spring Boot, eine Import-Dependency mit Codenamen bei Spring Cloud. Wahrscheinlich gibt es gute Gründe dafür - als Einsteiger ist das erstmal etwas gewöhnungsbedürftig.
 
 ## TODO
-- https://spring.io/guides/gs/service-registration-and-discovery/
 - https://spring.io/guides/gs/circuit-breaker/
 - https://spring.io/guides/tutorials/bookmarks/
