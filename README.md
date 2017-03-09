@@ -234,7 +234,7 @@ eureka:
     preferIpAddress: true
 ```
 
-Der Eureka-Server bringt von Haus aus eine Weboberfläche mit (http://localhost:8761/), auf der der Zustand der Service Registry zu sehen ist. In [ServiceInstanceController.java](https://github.com/stphngrtz/hello-spring-cloud/blob/master/eureka-client/src/main/java/de/stphngrtz/spring/cloud/eureka/ServiceInstanceController.java) sieht man beispielhaft, wie man auf die Service Discovery zugreift.
+Der Eureka-Server bringt von Haus aus eine Weboberfläche mit (http://localhost:8761/), auf der der Zustand der Service Registry zu sehen ist. In [ServiceInstanceController.java](https://github.com/stphngrtz/hello-spring-cloud/blob/master/eureka-client/src/main/java/de/stphngrtz/spring/cloud/eureka/ServiceInstanceController.java) sieht man beispielhaft, wie man auf die Service Discovery zugreift. Die Klasse stellt einen REST-Endpunkt bereits, über den man Informationen zu Services abfragen kann (zB. http://localhost:8080/service-instances/eureka-client).
 
 ### Fazit
 Die Vorteile davon, den Server in eine eigene Anwendung zu wrappen, erschließen sich mir noch nicht ganz. Intuitiv würde ich die Service Registry als dediziertes System laufen lassen. Da ich mich aber über diesen Guide hinaus noch nicht mit Eureka bzw. Spring Cloud Eureka beschäftigt habe, kommt die Erleuchtung vielleicht, wenn ich denn genau dies mache.
@@ -244,3 +244,6 @@ Die unterschiedliche Art und Weise der Versionierung finde ich noch nicht ganz g
 ## TODO
 - https://spring.io/guides/gs/circuit-breaker/
 - https://spring.io/guides/tutorials/bookmarks/
+
+Siehe auch
+- https://blog.de-swaef.eu/the-netflix-stack-using-spring-boot/
